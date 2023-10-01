@@ -838,6 +838,23 @@ static void build_posix_ctxt(struct smb2_posix_neg_context *pneg_ctxt)
 	pneg_ctxt->Name[15] = 0x7C;
 }
 
+static void build_rdma_cap_ctxt(struct smb2_rdma_capabilities *pneg_ctxt)
+{
+	pneg_ctxt->ContextType = SMB2_RDMA_TRANSFORM_CAPABILITIES;
+	// Allocate 2 byte to hold one transform id.
+	pneg_ctxt->DataLength =
+		cpu_to_le16((sizeof(struct smb2_rdma_capabilities) + 2)
+			- sizeof(struct smb2_neg_context));
+	pneg_ctxt->Reserved = cpu_to_le32(0);
+	pneg_ctxt->TransformCount = 1;
+	pneg_ctxt->Reserved1 = cpu_to_le16(0);
+	pneg_ctxt->Reserved2 = cpu_to_le32(0);
+	// Force use SMB2_RDMA_TRANSFORM_SIGNING as this is sent in windows 11 client requsts.
+	// Note: set count to 1 and SMB2_RDMA_TRANSFORM_NONE will cause windows 11 teminate connection.
+	// https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-smb2/b39f253e-4963-40df-8dff-2f9040ebbeb1
+	pneg_ctxt->RDMATransformIds[0] = 0x2;
+}
+
 static unsigned int assemble_neg_contexts(struct ksmbd_conn *conn,
 				  struct smb2_negotiate_rsp *rsp)
 {
@@ -886,6 +903,17 @@ static unsigned int assemble_neg_contexts(struct ksmbd_conn *conn,
 				    conn->signing_algorithm);
 		neg_ctxt_cnt++;
 		ctxt_size += sizeof(struct smb2_signing_capabilities) + 2;
+	}
+
+	if (conn->rdma_negotiated) {
+		ctxt_size = round_up(ctxt_size, 8);
+		ksmbd_debug(SMB,
+			    "assemble SMB2_RDMA_TRANSFORM_CAPABILITIES context\n");
+		build_rdma_cap_ctxt((struct smb2_rdma_capabilities *)
+				    (pneg_ctxt + ctxt_size));
+		neg_ctxt_cnt++;
+		// TODO using only one transform id thus +2.
+		ctxt_size += sizeof(struct smb2_rdma_capabilities) + 2;
 	}
 
 	rsp->NegotiateContextCount = cpu_to_le16(neg_ctxt_cnt);
@@ -1010,6 +1038,26 @@ static void decode_sign_cap_ctxt(struct ksmbd_conn *conn,
 	}
 }
 
+static void decode_rdma_cap_ctxt(struct ksmbd_conn *conn,
+				 struct smb2_rdma_capabilities *pneg_ctxt,
+				 int ctxt_len)
+{
+	int transform_cnt;
+
+	if (sizeof(struct smb2_rdma_capabilities) > ctxt_len) {
+		pr_err("Invalid SMB2_RDMA_TRANSFORM_CAPABILITIES context length\n");
+		return;
+	}
+
+	transform_cnt = le16_to_cpu(pneg_ctxt->TransformCount);
+	if (transform_cnt == 0) {
+		pr_err("Invalid SMB2_RDMA_TRANSFORM_CAPABILITIES TransformCount is 0\n");
+		return;
+	}
+
+	conn->rdma_negotiated = true;
+}
+
 static __le32 deassemble_neg_contexts(struct ksmbd_conn *conn,
 				      struct smb2_negotiate_req *req,
 				      unsigned int len_of_smb)
@@ -1083,6 +1131,13 @@ static __le32 deassemble_neg_contexts(struct ksmbd_conn *conn,
 
 			decode_sign_cap_ctxt(conn,
 					     (struct smb2_signing_capabilities *)pctx,
+					     ctxt_len);
+		} else if (pctx->ContextType == SMB2_RDMA_TRANSFORM_CAPABILITIES) {
+			ksmbd_debug(SMB,
+				    "deassemble SMB2_RDMA_TRANSFORM_CAPABILITIES context\n");
+
+			decode_rdma_cap_ctxt(conn,
+					     (struct smb2_rdma_capabilities *)pctx,
 					     ctxt_len);
 		}
 

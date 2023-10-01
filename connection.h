@@ -104,6 +104,7 @@ struct ksmbd_conn {
 	bool				signing_negotiated;
 	__le16				signing_algorithm;
 	bool				binding;
+	bool				rdma_negotiated;
 };
 
 struct ksmbd_conn_ops {

@@ -263,6 +263,7 @@ struct preauth_integrity_info {
 #define SMB2_ENCRYPTION_CAPABILITIES		cpu_to_le16(2)
 #define SMB2_COMPRESSION_CAPABILITIES		cpu_to_le16(3)
 #define SMB2_NETNAME_NEGOTIATE_CONTEXT_ID	cpu_to_le16(5)
+#define SMB2_RDMA_TRANSFORM_CAPABILITIES	cpu_to_le16(7)
 #define SMB2_SIGNING_CAPABILITIES		cpu_to_le16(8)
 #define SMB2_POSIX_EXTENSIONS_AVAILABLE		cpu_to_le16(0x100)
 
@@ -348,6 +349,16 @@ struct smb2_signing_capabilities {
 	__le32	Reserved;
 	__le16	SigningAlgorithmCount;
 	__le16	SigningAlgorithms[];
+} __packed;
+
+struct smb2_rdma_capabilities {
+	__le16	ContextType; /* 7 */
+	__le16	DataLength;
+	__le32	Reserved;
+	__le16	TransformCount;
+	__le16	Reserved1;
+	__le32	Reserved2;
+	__le16	RDMATransformIds[];
 } __packed;
 
 struct smb2_negotiate_rsp {
