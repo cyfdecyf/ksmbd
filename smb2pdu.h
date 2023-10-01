@@ -228,6 +228,7 @@ struct smb2_negotiate_req {
 #define SMB2_GLOBAL_CAP_PERSISTENT_HANDLES 0x00000010 /* New to SMB3 */
 #define SMB2_GLOBAL_CAP_DIRECTORY_LEASING  0x00000020 /* New to SMB3 */
 #define SMB2_GLOBAL_CAP_ENCRYPTION	0x00000040 /* New to SMB3 */
+#define SMB2_GLOBAL_CAP_RDMA		0x00000080 /* New to SMB3 */
 /* Internal types */
 #define SMB2_NT_FIND			0x00100000
 #define SMB2_LARGE_FILES		0x00200000

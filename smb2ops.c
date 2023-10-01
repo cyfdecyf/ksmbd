@@ -281,6 +281,9 @@ void init_smb3_0_server(struct ksmbd_conn *conn)
 
 	if (server_conf.flags & KSMBD_GLOBAL_FLAG_SMB3_MULTICHANNEL)
 		conn->vals->capabilities |= SMB2_GLOBAL_CAP_MULTI_CHANNEL;
+
+	if (server_conf.flags & KSMBD_GLOBAL_FLAG_SMB3_RDMA)
+		conn->vals->capabilities |= SMB2_GLOBAL_CAP_RDMA;
 }
 
 /**
@@ -306,6 +309,9 @@ void init_smb3_02_server(struct ksmbd_conn *conn)
 
 	if (server_conf.flags & KSMBD_GLOBAL_FLAG_SMB3_MULTICHANNEL)
 		conn->vals->capabilities |= SMB2_GLOBAL_CAP_MULTI_CHANNEL;
+
+	if (server_conf.flags & KSMBD_GLOBAL_FLAG_SMB3_RDMA)
+		conn->vals->capabilities |= SMB2_GLOBAL_CAP_RDMA;
 }
 
 /**
@@ -326,6 +332,9 @@ int init_smb3_11_server(struct ksmbd_conn *conn)
 
 	if (server_conf.flags & KSMBD_GLOBAL_FLAG_SMB3_MULTICHANNEL)
 		conn->vals->capabilities |= SMB2_GLOBAL_CAP_MULTI_CHANNEL;
+
+	if (server_conf.flags & KSMBD_GLOBAL_FLAG_SMB3_RDMA)
+		conn->vals->capabilities |= SMB2_GLOBAL_CAP_RDMA;
 
 	INIT_LIST_HEAD(&conn->preauth_sess_table);
 	return 0;
